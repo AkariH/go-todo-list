@@ -17,13 +17,24 @@ var (
 )
 
 type User struct {
-	Name      string
+	Name      string `json:"name"`
 	Age       uint
 	Birthday  time.Time `gorm:"default:2000-07-12"`
 	Money     float32
 	ID        int       `gorm:"primaryKey;autoIncrement"`
 	CreatedAt time.Time // Automatically managed by GORM for creation time
 	UpdatedAt time.Time // Automatically managed by GORM for update time
+}
+
+type Message struct {
+	Content   string    `json:"content"`
+	ID        int       `json:"id";gorm:"primaryKey;autoIncrement"`
+	CreatedAt time.Time // Automatically managed by GORM for creation time
+	UpdatedAt time.Time // Automatically managed by GORM for update time
+}
+
+type RequestBody struct {
+	User User
 }
 
 func InitDB() {
@@ -40,4 +51,5 @@ func InitDB() {
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
+	Migrate()
 }
