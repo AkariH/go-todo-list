@@ -53,3 +53,7 @@ func InitDB() {
 	})
 	Migrate()
 }
+
+func GetDB() *gorm.DB {
+	return DB
+}

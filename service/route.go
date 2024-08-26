@@ -2,14 +2,20 @@ package service
 
 import (
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"todo-list/internal"
 )
 
+var (
+	DB *gorm.DB
+)
+
 func InitRoute() {
 	r := gin.Default()
-	if internal.DB == nil {
+	DB = internal.GetDB()
+	if DB == nil {
 		log.Fatal("Database is still nil after initialization")
 	} else {
 		log.Println("Database initialized successfully")
@@ -21,21 +27,33 @@ func InitRoute() {
 	r.POST("/create", createMessage)
 	r.POST("/update", updateMessage)
 
-	r.DELETE("/delete", deleteMessage)
+	r.DELETE("/delete/:id", deleteMessage)
 	r.Run(":8081") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
 
 func deleteMessage(c *gin.Context) {
+	var message internal.Message
+	id := c.Param("id")
+
+	if err := DB.First(&message, id).Error; err != nil {
+		log.Println(err)
+		c.JSON(http.StatusNotFound, "record not found")
+		return
+	}
+	c.JSON(http.StatusOK, message)
+	DB.Delete(&message, id)
 
 }
 
 func updateMessage(c *gin.Context) {
 	var (
-		DB           = internal.DB
-		message      internal.Message
 		inputMessage internal.Message
+		message      internal.Message
 	)
-	c.BindJSON(&inputMessage)
+	err := c.BindJSON(&inputMessage)
+	if err != nil {
+		log.Println(err)
+	}
 	id := inputMessage.ID
 	content := inputMessage.Content
 
@@ -53,10 +71,9 @@ func updateMessage(c *gin.Context) {
 }
 
 func getMessage(c *gin.Context) {
-	var DB = internal.DB
 	id := c.Param("id")
 	var message internal.Message
-	log.Println(id)
+	log.Printf("id is %v\n", id)
 
 	if err := DB.First(&message, id).Error; err != nil {
 		log.Println(err)
@@ -67,15 +84,15 @@ func getMessage(c *gin.Context) {
 }
 
 func createMessage(c *gin.Context) {
-	var msg internal.Message
-	var DB = internal.DB
-	err := c.BindJSON(&msg)
+
+	var message internal.Message
+	err := c.BindJSON(&message)
 	if err != nil {
 		log.Println(err)
 	}
 
-	DB.Create(&msg)
-	c.JSON(http.StatusOK, &msg)
+	DB.Create(&message)
+	c.JSON(http.StatusOK, &message)
 
 }
 
