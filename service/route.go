@@ -19,7 +19,37 @@ func InitRoute() {
 	r.GET("/message/:id", getMessage)
 
 	r.POST("/create", createMessage)
+	r.POST("/update", updateMessage)
+
+	r.DELETE("/delete", deleteMessage)
 	r.Run(":8081") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+}
+
+func deleteMessage(c *gin.Context) {
+
+}
+
+func updateMessage(c *gin.Context) {
+	var (
+		DB           = internal.DB
+		message      internal.Message
+		inputMessage internal.Message
+	)
+	c.BindJSON(&inputMessage)
+	id := inputMessage.ID
+	content := inputMessage.Content
+
+	if err := DB.First(&message, id).Error; err != nil {
+		log.Println(err)
+		c.JSON(http.StatusNotFound, "record not found")
+		return
+	}
+	log.Printf("before modified id = %v, content =%v", message.ID, message.Content)
+	message.Content = content
+	DB.Save(&message)
+	log.Printf("after modified id = %v, content =%v", id, content)
+
+	c.JSON(http.StatusOK, message)
 }
 
 func getMessage(c *gin.Context) {
@@ -30,17 +60,22 @@ func getMessage(c *gin.Context) {
 
 	if err := DB.First(&message, id).Error; err != nil {
 		log.Println(err)
+		c.JSON(http.StatusNotFound, "record not found")
+		return
 	}
 	c.JSON(http.StatusOK, message)
 }
 
 func createMessage(c *gin.Context) {
 	var msg internal.Message
+	var DB = internal.DB
 	err := c.BindJSON(&msg)
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println(msg)
+
+	DB.Create(&msg)
+	c.JSON(http.StatusOK, &msg)
 
 }
 
